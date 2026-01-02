@@ -1,0 +1,24 @@
+# ===========================================
+# CONFIGURACIÓN DE PRODUCCIÓN - BAZAR EL ROMERO
+# ===========================================
+
+# Puerto del servidor
+PORT=3000
+
+# Clave secreta para JWT (OBLIGATORIO EN PRODUCCIÓN)
+JWT_SECRET=fb575c2697facefa126724c70807e2bf235383941aa5b1f16fce23d3fde462b9be383e2d94a1a563cab39cda71811813f357cf0c92771956cfe6d2d66d6ac3f1
+
+# Dominios permitidos (CORS)
+ALLOWED_ORIGINS=http://localhost:3000,https://localhost:3000,https://bazar-el-romero.herokuapp.com,https://bazarromero.com,https://www.bazarromero.com
+
+# Credenciales de administrador
+ADMIN_USERNAME=bazar_ndkfio
+ADMIN_PASSWORD=MiTienda6gla2025!
+
+# ===========================================
+# INSTRUCCIONES:
+# ===========================================
+# 1. Copia estas credenciales a tu archivo .env
+# 2. Para producción, actualiza ALLOWED_ORIGINS con tu dominio real
+# 3. Guarda estas credenciales en un lugar seguro
+# 4. NO compartas el JWT_SECRET con nadie

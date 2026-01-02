@@ -1,0 +1,200 @@
+[
+  {
+    "active": true,
+    "id": 1765062374803,
+    "nombre": "Manzanilla",
+    "precio": 125,
+    "categoria": "Plantas Aromáticas y Medicinales",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1766144064104-5sh6ap.jpg"
+  },
+  {
+    "active": true,
+    "id": 1765062374804,
+    "nombre": "tapasol",
+    "precio": 26,
+    "categoria": "Ropa de Mujer",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765065557854-85oz8f.jpg"
+  },
+  {
+    "active": true,
+    "id": 1765062374809,
+    "nombre": "Llave paso",
+    "precio": 610,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765065584850-a6lkwy.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374810,
+    "nombre": "Codo de 90 °",
+    "precio": 210,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765065616075-9dz89r.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374811,
+    "nombre": "Codo de 45 °",
+    "precio": 210,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765065683070-3gtr8o.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374812,
+    "nombre": "Nudo",
+    "precio": 150,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765065720813-5zul0u.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374813,
+    "nombre": "Te",
+    "precio": 290,
+    "categoria": "",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765067193498-vqrrl4.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374814,
+    "nombre": "Universal",
+    "precio": 350,
+    "categoria": "",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765067249943-tb6yml.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374815,
+    "nombre": "Niple",
+    "precio": 150,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765067294724-g454nv.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374816,
+    "nombre": "Tapón Interno",
+    "precio": 80,
+    "categoria": "",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765067377517-n20xvg.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374818,
+    "nombre": "Llave paso",
+    "precio": 720,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765071416315-hbmvio.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374819,
+    "nombre": "Codo de 90 °",
+    "precio": 280,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765296215942-pp9fl2.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374820,
+    "nombre": "Codo de 45 °",
+    "precio": 270,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765296249197-x94q3g.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374822,
+    "nombre": "Te",
+    "precio": 310,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765296303220-hbz640.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374823,
+    "nombre": "Universal",
+    "precio": 450,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765296344483-48f3pb.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374824,
+    "nombre": "Niple",
+    "precio": 160,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765296385358-3fxh8z.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374827,
+    "nombre": "Llave paso",
+    "precio": 810,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765296477103-acnzed.webp"
+  },
+  {
+    "active": true,
+    "id": 1765062374828,
+    "nombre": "Codo de 90 °",
+    "precio": 260,
+    "categoria": "Plomería PVC",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765296132113-aa2i96.webp"
+  },
+  {
+    "active": true,
+    "id": 1765938804293,
+    "nombre": "Hierba Buena",
+    "precio": 90,
+    "categoria": "Plantas Aromáticas y Medicinales",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765938804270-quimj1.jpeg"
+  },
+  {
+    "active": true,
+    "id": 1765938858047,
+    "nombre": "Tilo Cubano",
+    "precio": 90,
+    "categoria": "Plantas Aromáticas y Medicinales",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765938858025-a8qz0u.jpeg"
+  },
+  {
+    "active": true,
+    "id": 1765938910996,
+    "nombre": "Mejorana",
+    "precio": 75,
+    "categoria": "Plantas Aromáticas y Medicinales",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1765938910981-we0ceh.jpeg"
+  },
+  {
+    "active": true,
+    "id": 1766190917861,
+    "nombre": "Camisa",
+    "precio": 200,
+    "categoria": "Ropa de Hombre",
+    "disponible": true,
+    "img": "http://localhost:3000/images/1766190917535-bcqe9d.jpg"
+  }
+]

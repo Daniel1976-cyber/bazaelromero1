@@ -1,0 +1,8 @@
+{
+    "liveServer.settings.port": 5503,
+    "Codegeex.Chat.LanguagePreference": "English",
+    "Codegeex.Comment.LanguagePreference": "English",
+    "Codegeex.CommitMessage.LanguagePreference": "English",
+    "Codegeex.CommitMessageStyle": "Auto",
+    "Codegeex.RepoIndex": true
+}
