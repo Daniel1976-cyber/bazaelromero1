@@ -5,6 +5,8 @@
   <title>Administración - Cargar Productos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Configuración de ambiente -->
+  <script src="config.js"></script>
   <style>
     :root {
       --verde: #3a6b4a;
@@ -346,15 +348,8 @@
 
   <script>
     // Auto-detect server URL based on current location
-    // Auto-detect server URL - works for both desktop and mobile
-    let API_BASE;
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      // Desktop access - use localhost backend
-      API_BASE = 'http://localhost:3000/api';
-    } else {
-      // Mobile or network access - use the current host
-      API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
-    }
+    // Usar configuración automática desde config.js
+    const API_BASE = window.API_CONFIG.API_BASE;
     
     // Log the detected API base for debugging
     console.log('API Base detected:', API_BASE, '| Host:', window.location.hostname);

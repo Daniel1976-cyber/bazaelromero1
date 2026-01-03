@@ -8,6 +8,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <!-- DOMPurify para sanitizar HTML y prevenir XSS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+  <!-- Configuración de ambiente -->
+  <script src="config.js"></script>
   <style>
     :root{--verde:#3a6b4a;--crema:#f5f1e8;--tierra:#8c5e46;--hoja:#5a8a3a;--texto:#2e2e2e}
     *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif}
@@ -158,15 +160,8 @@
   <script>
     /* ----------  CONFIG / DATOS INICIALES  ---------- */
     // Auto-detect server URL based on current location
-    // Auto-detect server URL - works for both desktop and mobile
-    let API_BASE;
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      // Desktop access - use localhost backend
-      API_BASE = 'http://localhost:3000/api';
-    } else {
-      // Mobile or network access - use the current host with backend port
-      API_BASE = `${window.location.protocol}//${window.location.hostname}:3000/api`;
-    }
+    // Usar configuración automática desde config.js
+    const API_BASE = window.API_CONFIG.API_BASE;
     
     // Log the detected API base for debugging
     console.log('API Base detected:', API_BASE, '| Host:', window.location.hostname);
