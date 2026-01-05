@@ -1,17 +1,22 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
+
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://qrnjpovomhbgyqsnhufe.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY; // Service key preferred, or Anon if using policies
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const app = express();
 
 // Configurar CORS de forma más segura
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? 
-  process.env.ALLOWED_ORIGINS.split(',') : 
+const allowedOrigins = process.env.ALLOWED_ORIGINS ?
+  process.env.ALLOWED_ORIGINS.split(',') :
   ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:3000', 'http://127.0.0.1:8080'];
 
 app.use(cors({
@@ -35,11 +40,9 @@ app.use(express.json({ limit: '10mb' }));
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 
 const DATA_DIR = path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'catalog.json');
 const IMAGES_DIR = path.join(DATA_DIR, 'images');
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, '[]', 'utf8');
 if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
 
 // NO SERVIR ARCHIVOS ESTÁTICOS DESDE EL BACKEND POR SEGURIDAD
@@ -78,31 +81,23 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ 
-  storage, 
+const upload = multer({
+  storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter
 });
 
-function readData() {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf8') || '[]';
-    const arr = JSON.parse(raw);
-    // Ensure existing items have an `active` flag (default true)
-    return arr.map(item => (Object.assign({ active: true }, item)));
-  } catch (e) {
-    console.error('Error leyendo datos:', e);
+// Helper to get all products
+async function getAllProducts() {
+  const { data, error } = await supabase.from('products').select('*');
+  if (error) {
+    console.error('Error fetching products:', error);
     return [];
   }
+  return data;
 }
 
-function writeData(data) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-  } catch (e) {
-    console.error('Error guardando datos:', e);
-  }
-}
+// Write data functions are removed in favor of direct DB status updates
 
 // Rate limiting simple (en producción usar express-rate-limit)
 const loginAttempts = new Map();
@@ -112,16 +107,16 @@ const LOGIN_WINDOW = 15 * 60 * 1000; // 15 minutos
 function checkRateLimit(ip) {
   const now = Date.now();
   const attempts = loginAttempts.get(ip) || { count: 0, resetTime: now + LOGIN_WINDOW };
-  
+
   if (now > attempts.resetTime) {
     attempts.count = 0;
     attempts.resetTime = now + LOGIN_WINDOW;
   }
-  
+
   if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
     return false;
   }
-  
+
   attempts.count++;
   loginAttempts.set(ip, attempts);
   return true;
@@ -175,8 +170,9 @@ function authenticate(req, res, next) {
 }
 
 // List all products (public)
-app.get('/api/products', (req, res) => {
-  const data = readData();
+app.get('/api/products', async (req, res) => {
+  const data = await getAllProducts();
+
   // If query ?all=true is requested and a valid token is provided, return everything
   const wantAll = req.query && String(req.query.all).toLowerCase() === 'true';
   if (wantAll && req.headers['authorization']) {
@@ -197,26 +193,24 @@ app.get('/api/products', (req, res) => {
 });
 
 // Get one product (public)
-app.get('/api/products/:id', (req, res) => {
+app.get('/api/products/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const data = readData();
-  const p = data.find(x => x.id === id);
-  if (!p) return res.status(404).json({ error: 'Not found' });
-  res.json(p);
+  const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
+  if (error || !data) return res.status(404).json({ error: 'Not found' });
+  res.json(data);
 });
 
 // Create product (protected)
-app.post('/api/products', authenticate, (req, res) => {
+app.post('/api/products', authenticate, async (req, res) => {
   const payload = req.body || {};
   const validationErrors = validateProduct(payload);
   if (validationErrors.length > 0) {
     return res.status(400).json({ error: 'Validación fallida', details: validationErrors });
   }
-  
-  const data = readData();
-  const id = payload.id || Date.now();
+
+  // Supabase handles ID generation if not provided, or uses provided if it's unique.
+  // For simplicity, we'll let Supabase handle it if `id` is not explicitly set in payload.
   const product = {
-    id,
     nombre: sanitizeString(payload.nombre || ''),
     precio: Number(payload.precio) || 0,
     categoria: sanitizeString(payload.categoria || ''),
@@ -224,85 +218,110 @@ app.post('/api/products', authenticate, (req, res) => {
     img: payload.img || '',
     active: payload.active !== false
   };
-  data.push(product);
-  writeData(data);
-  res.status(201).json(product);
+
+  const { data, error } = await supabase.from('products').insert([product]).select(); // .select() to return the inserted data
+
+  if (error) {
+    console.error('Error creando producto:', error);
+    return res.status(500).json({ error: 'Error interno al crear el producto' });
+  }
+  res.status(201).json(data[0]); // Return the first (and only) inserted product
 });
 
 // Update product (protected)
-app.put('/api/products/:id', authenticate, (req, res) => {
+app.put('/api/products/:id', authenticate, async (req, res) => {
   const id = Number(req.params.id);
   const payload = req.body || {};
   const validationErrors = validateProduct(payload);
   if (validationErrors.length > 0) {
     return res.status(400).json({ error: 'Validación fallida', details: validationErrors });
   }
-  
-  const data = readData();
-  const idx = data.findIndex(x => x.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  // Merge updates but keep id, sanitizando campos de texto
-  const updated = Object.assign({}, data[idx], {
-    nombre: payload.nombre !== undefined ? sanitizeString(payload.nombre) : data[idx].nombre,
-    precio: payload.precio !== undefined ? Number(payload.precio) : data[idx].precio,
-    categoria: payload.categoria !== undefined ? sanitizeString(payload.categoria) : data[idx].categoria,
-    disponible: payload.disponible !== undefined ? !!payload.disponible : data[idx].disponible,
-    img: payload.img !== undefined ? payload.img : data[idx].img,
-    active: payload.active !== undefined ? !!payload.active : data[idx].active,
-    id
-  });
-  data[idx] = updated;
-  writeData(data);
-  res.json(updated);
+
+  // Fetch existing
+  const { data: existing, error: fetchError } = await supabase.from('products').select('*').eq('id', id).single();
+  if (fetchError || !existing) return res.status(404).json({ error: 'Not found' });
+
+  const updated = {
+    nombre: payload.nombre !== undefined ? sanitizeString(payload.nombre) : existing.nombre,
+    precio: payload.precio !== undefined ? Number(payload.precio) : existing.precio,
+    categoria: payload.categoria !== undefined ? sanitizeString(payload.categoria) : existing.categoria,
+    disponible: payload.disponible !== undefined ? !!payload.disponible : existing.disponible,
+    img: payload.img !== undefined ? payload.img : existing.img,
+    active: payload.active !== undefined ? !!payload.active : existing.active,
+  };
+
+  const { data, error } = await supabase.from('products').update(updated).eq('id', id).select();
+  if (error) {
+    console.error('Error actualizando producto:', error);
+    return res.status(500).json({ error: 'Error actualizando el producto' });
+  }
+  res.json(data[0]); // Return the updated product
 });
 
 // Delete product (protected) - Soft delete
-app.delete('/api/products/:id', authenticate, (req, res) => {
+app.delete('/api/products/:id', authenticate, async (req, res) => {
   const id = Number(req.params.id);
-  const data = readData();
-  const idx = data.findIndex(x => x.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  
-  // Soft-delete: mark as inactive
-  data[idx].active = false;
-  writeData(data);
-  res.json({ ok: true, message: 'Producto desactivado correctamente', product: data[idx] });
+  const { data, error } = await supabase.from('products').update({ active: false }).eq('id', id).select();
+  if (error) {
+    console.error('Error desactivando producto:', error);
+    return res.status(500).json({ error: 'Error desactivando el producto' });
+  }
+  if (!data || data.length === 0) {
+    return res.status(404).json({ error: 'Producto no encontrado para desactivar' });
+  }
+  res.json({ ok: true, message: 'Producto desactivado correctamente', product: data[0] });
 });
 
 // Hard delete product (protected) - Complete removal
-app.delete('/api/products/:id/hard', authenticate, (req, res) => {
+app.delete('/api/products/:id/hard', authenticate, async (req, res) => {
   const id = Number(req.params.id);
-  const data = readData();
-  const idx = data.findIndex(x => x.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  
-  const deletedProduct = data[idx];
-  data.splice(idx, 1); // Remove completely
-  writeData(data);
-  res.json({ ok: true, message: 'Producto eliminado completamente', product: deletedProduct });
+  const { data, error } = await supabase.from('products').delete().eq('id', id).select();
+  if (error) {
+    console.error('Error eliminando producto:', error);
+    return res.status(500).json({ error: 'Error eliminando el producto' });
+  }
+  if (!data || data.length === 0) {
+    return res.status(404).json({ error: 'Producto no encontrado para eliminar' });
+  }
+  res.json({ ok: true, message: 'Producto eliminado completamente', product: data[0] });
 });
 
 // Import (replace all) (protected)
-app.post('/api/import', authenticate, (req, res) => {
+app.post('/api/import', authenticate, async (req, res) => {
   const payload = req.body;
   if (!Array.isArray(payload)) return res.status(400).json({ error: 'Array expected' });
-  
+
   // Validar y sanitizar todos los productos
   const validatedProducts = [];
   for (const product of payload) {
     const errors = validateProduct(product);
     if (errors.length === 0) {
       validatedProducts.push({
-        ...product,
         nombre: sanitizeString(product.nombre || ''),
         categoria: sanitizeString(product.categoria || ''),
-        precio: Number(product.precio) || 0
+        precio: Number(product.precio) || 0,
+        disponible: !!product.disponible,
+        img: product.img || '',
+        active: product.active !== false
       });
     }
   }
-  
-  writeData(validatedProducts);
-  res.json({ ok: true, count: validatedProducts.length, rejected: payload.length - validatedProducts.length });
+
+  // Delete all existing products
+  const { error: deleteError } = await supabase.from('products').delete().neq('id', 0); // Delete all where id is not 0 (i.e., all)
+  if (deleteError) {
+    console.error('Error al eliminar productos existentes:', deleteError);
+    return res.status(500).json({ error: 'Error al limpiar productos existentes' });
+  }
+
+  // Insert new products
+  const { data: insertedData, error: insertError } = await supabase.from('products').insert(validatedProducts).select();
+  if (insertError) {
+    console.error('Error al importar nuevos productos:', insertError);
+    return res.status(500).json({ error: 'Error al importar nuevos productos' });
+  }
+
+  res.json({ ok: true, count: insertedData.length, rejected: payload.length - validatedProducts.length });
 });
 
 // Upload image (protected)
@@ -314,32 +333,20 @@ app.post('/api/upload-image', authenticate, upload.single('image'), (req, res) =
 });
 
 // ----- Simple auth routes -----
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-if (!fs.existsSync(USERS_FILE)) {
-  const hashed = bcrypt.hashSync('admin123', 8);
-  fs.writeFileSync(USERS_FILE, JSON.stringify([{ id: 1, username: 'admin', password: hashed }], null, 2));
-}
+// No local users file anymore
+// Initial user creation should be done directly in Supabase or via a separate setup script.
+// For example, you could have a 'users' table in Supabase with 'id', 'username', 'password' columns.
 
-function readUsers() {
-  try {
-    const raw = fs.readFileSync(USERS_FILE, 'utf8') || '[]';
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error reading users:', e);
-    return [];
-  }
-}
-
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'username/password required' });
-  
-  // Rate limiting
+
+  // Rate limiting (simplified for now, keep memory map or move to Redis/DB)
   const clientIp = req.ip || req.connection.remoteAddress;
   if (!checkRateLimit(clientIp)) {
     return res.status(429).json({ error: 'Demasiados intentos. Intenta más tarde.' });
   }
-  
+
   // Validar formato de username y password
   if (typeof username !== 'string' || username.length < 3 || username.length > 50) {
     return res.status(400).json({ error: 'Username inválido' });
@@ -347,52 +354,51 @@ app.post('/api/auth/login', (req, res) => {
   if (typeof password !== 'string' || password.length < 6) {
     return res.status(400).json({ error: 'Password debe tener al menos 6 caracteres' });
   }
-  
-  const users = readUsers();
-  const user = users.find(u => u.username === username);
-  if (!user) {
+
+  const { data: user, error } = await supabase.from('users').select('*').eq('username', username).single();
+
+  if (!user || error) {
     // No revelar si el usuario existe o no (mejor seguridad)
     return res.status(401).json({ error: 'Credenciales inválidas' });
   }
+
   const ok = bcrypt.compareSync(password, user.password);
   if (!ok) {
     return res.status(401).json({ error: 'Credenciales inválidas' });
   }
-  
-  // Resetear intentos en login exitoso
+
   loginAttempts.delete(clientIp);
-  
   const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '8h' });
   res.json({ token });
 });
 
-// Change password (protected)
-app.post('/api/auth/change-password', authenticate, (req, res) => {
+app.post('/api/auth/change-password', authenticate, async (req, res) => {
   const { oldPassword, newPassword } = req.body || {};
   if (!oldPassword || !newPassword) return res.status(400).json({ error: 'oldPassword and newPassword required' });
-  
+
   // Validar nueva contraseña
   if (typeof newPassword !== 'string' || newPassword.length < 6) {
     return res.status(400).json({ error: 'Nueva contraseña debe tener al menos 6 caracteres' });
   }
-  
-  const users = readUsers();
-  const user = users.find(u => u.id === req.user.id);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const { data: user, error: fetchError } = await supabase.from('users').select('*').eq('id', req.user.id).single();
+  if (fetchError || !user) return res.status(404).json({ error: 'User not found' });
+
   if (!bcrypt.compareSync(oldPassword, user.password)) return res.status(401).json({ error: 'Contraseña actual incorrecta' });
-  
+
   // Validar que la nueva contraseña sea diferente
   if (bcrypt.compareSync(newPassword, user.password)) {
     return res.status(400).json({ error: 'La nueva contraseña debe ser diferente a la actual' });
   }
-  
-  user.password = bcrypt.hashSync(newPassword, 10); // Aumentar rounds de bcrypt
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: 'No se pudo guardar la contraseña' });
+
+  const newHash = bcrypt.hashSync(newPassword, 10); // Aumentar rounds de bcrypt
+  const { error } = await supabase.from('users').update({ password: newHash }).eq('id', user.id);
+
+  if (error) {
+    console.error('Error actualizando contraseña:', error);
+    return res.status(500).json({ error: 'No se pudo guardar la nueva contraseña' });
   }
+  res.json({ ok: true });
 });
 
 // Middleware para obtener IP real (útil para rate limiting)
